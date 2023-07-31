@@ -64,6 +64,8 @@ RUN curl https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime
 # Download nessie spark runtime
 RUN curl https://repo.maven.apache.org/maven2/org/projectnessie/nessie-integrations/nessie-spark-extensions-${SPARK_MAJOR_VERSION}_2.12/0.65.1/nessie-spark-extensions-${SPARK_MAJOR_VERSION}_2.12-0.65.1.jar -Lo /opt/spark/jars/nessie-spark-extensions-${SPARK_MAJOR_VERSION}_2.12-0.65.1.jar
 
+# Download JDBC driver for Postgres
+RUN curl https://jdbc.postgresql.org/download/postgresql-42.6.0.jar -Lo /opt/spark/jars/postgresql-42.6.0.jar
 
 # Download Java AWS SDK
 ENV AWSSDK_VERSION=2.20.18

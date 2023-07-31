@@ -19,7 +19,9 @@ AWS Acess Secret: password
 
 IAM Role:
 
-AWS Root Path: AWS Root Path
+AWS Root Path: /warehouse
+
+Encrypt connection: false
 
 Connection Properties:
 
