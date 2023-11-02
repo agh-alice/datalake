@@ -1,0 +1,59 @@
+# Deployment Yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-master
+  template:
+    metadata:
+      labels:
+        app: spark-master
+    spec:
+      serviceAccountName: spark
+      containers:
+      - name: spark-master
+        image: spark-master
+        imagePullPolicy: Never
+        resources:
+        ports:
+        - name: notebook
+          containerPort: 8888
+        - name: driver-port
+          containerPort: 8002
+        - name: block-manager
+          containerPort: 8001
+        - name: web-ui
+          containerPort: 4040
+        - name: shuffle-service
+          containerPort: 7337
+---
+# Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master
+spec:
+  clusterIP: None
+  selector:
+    app: spark-master
+  ports:
+  - name: shuffle-service
+    port: 7337
+    targetPort: 7337
+  - name: web-ui
+    port: 4040
+    targetPort: 4040
+  - name: block-manager
+    port: 8001
+    targetPort: 8001
+  - name: driver-port
+    port: 8002
+    targetPort: 8002
+  - name: notebook
+    port: 8888
+    targetPort: 8888
+    

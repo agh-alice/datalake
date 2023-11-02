@@ -74,13 +74,6 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/${AWSSDK_V
 # Download URL connection client required for S3FileIO
 RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-client/${AWSSDK_VERSION}/url-connection-client-${AWSSDK_VERSION}.jar -Lo /opt/spark/jars/url-connection-client-${AWSSDK_VERSION}.jar
 
-# Install AWS CLI
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
- && unzip awscliv2.zip \
- && sudo ./aws/install \
- && rm awscliv2.zip \
- && rm -rf aws/
-
 # Add iceberg spark runtime jar to IJava classpath
 ENV IJAVA_CLASSPATH=/opt/spark/jars/*
 
