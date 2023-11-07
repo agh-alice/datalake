@@ -1,0 +1,54 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: minio
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: service
+    protocol: TCP
+    port: 9000
+    targetPort: service
+  - name: console
+    protocol: TCP
+    port: 9001
+    targetPort: console
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-deployment
+  labels:
+    app: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:latest
+        command:
+        - /bin/bash
+        - -c
+        args: 
+        - minio server /data --console-address :9001
+        env:
+        - name: MINIO_ROOT_USER
+          value: admin
+        - name: MINIO_ROOT_PASSWORD
+          value: password
+        - name: MINIO_DOMAIN
+          value: minio
+        ports:
+        - name: service
+          containerPort: 9000
+        - name: console
+          containerPort: 9001
+

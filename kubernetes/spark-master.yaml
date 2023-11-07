@@ -16,8 +16,15 @@ spec:
       serviceAccountName: spark
       containers:
       - name: spark-master
-        image: spark-master
+        image: docker.io/library/spark-master
         imagePullPolicy: Never
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          value: admin
+        - name: AWS_SECRET_ACCESS_KEY
+          value: password
+        - name: AWS_REGION
+          value: us-east-1
         resources:
         ports:
         - name: notebook

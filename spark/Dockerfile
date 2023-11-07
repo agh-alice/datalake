@@ -1,20 +1,4 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# syntax=docker/dockerfile:1
-FROM python:3.9-bullseye
+FROM python:3.8-bullseye
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -77,34 +61,10 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-cl
 # Add iceberg spark runtime jar to IJava classpath
 ENV IJAVA_CLASSPATH=/opt/spark/jars/*
 
-RUN mkdir -p /home/iceberg/localwarehouse /home/iceberg/notebooks /home/iceberg/warehouse /home/iceberg/spark-events /home/iceberg
-COPY notebooks/ /home/iceberg/notebooks
-
-# Add a notebook command
-RUN echo '#! /bin/sh' >> /bin/notebook \
- && echo 'export PYSPARK_DRIVER_PYTHON=jupyter-notebook' >> /bin/notebook \
- && echo "export PYSPARK_DRIVER_PYTHON_OPTS=\"--notebook-dir=/home/iceberg/notebooks --ip='*' --NotebookApp.token='' --NotebookApp.password='' --port=8888 --no-browser --allow-root\"" >> /bin/notebook \
- && echo "pyspark" >> /bin/notebook \
- && chmod u+x /bin/notebook
-
-# Add a pyspark-notebook command (alias for notebook command for backwards-compatibility)
-RUN echo '#! /bin/sh' >> /bin/pyspark-notebook \
- && echo 'export PYSPARK_DRIVER_PYTHON=jupyter-notebook' >> /bin/pyspark-notebook \
- && echo "export PYSPARK_DRIVER_PYTHON_OPTS=\"--notebook-dir=/home/iceberg/notebooks --ip='*' --NotebookApp.token='' --NotebookApp.password='' --port=8888 --no-browser --allow-root\"" >> /bin/pyspark-notebook \
- && echo "pyspark" >> /bin/pyspark-notebook \
- && chmod u+x /bin/pyspark-notebook
-
 RUN mkdir -p /root/.ipython/profile_default/startup
 
-COPY spark-defaults.conf /opt/spark/conf
 ENV PATH="/opt/spark/sbin:/opt/spark/bin:${PATH}"
 
-RUN chmod u+x /opt/spark/sbin/* && \
-    chmod u+x /opt/spark/bin/*
+EXPOSE 8888
 
-COPY .pyiceberg.yaml /root/.pyiceberg.yaml
-
-COPY entrypoint.sh .
-
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["notebook"]
+CMD [ "jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--allow-root"]

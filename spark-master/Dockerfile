@@ -1,10 +1,17 @@
-FROM openjdk:11-jre-slim
+FROM openjdk:11-jdk-slim
+
+ENV PYSPARK_PYTHON=/usr/bin/python3.8
+ENV PYSPARK_DRIVER_PYTHON=/usr/bin/python3.8
 
 RUN useradd -ms /bin/bash spark\
     && apt-get update \
-    && apt-get install -y python3 python3-pip curl \
-    && pip3 install pip --upgrade \
-    && pip3 install pyspark pandas numpy jupyterlab
+    && apt install -y software-properties-common \
+    && apt-get update \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y python3.8 python3-pip curl \
+    && ${PYSPARK_PYTHON} install pip --upgrade \
+    && ${PYSPARK_PYTHON} install pyspark==3.4.1 pandas numpy jupyterlab
 
 RUN mkdir -m 777 -p /opt/spark/jars
 
@@ -33,4 +40,5 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-cl
 
 EXPOSE 8888
 
-CMD [ "jupyter-lab"]
+
+CMD [ "jupyter-lab" ]
