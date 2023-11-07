@@ -25,7 +25,7 @@ spark = SparkSession.builder.master("k8s://https://kubernetes.default.svc.cluste
                             .config("spark.sql.catalog.nessie.uri", "http://nessie:19120/api/v1")\
                             .config("spark.sql.catalog.nessie.authentication.type", "NONE")\
                             .config("spark.sql.catalog.nessie.io-impl", "org.apache.iceberg.aws.s3.S3FileIO")\
-                            .config("spark.sql.catalog.nessie.s3.endpoint", "http://miasdkljfhalskdjfhalskdjfnio:9000")\
+                            .config("spark.sql.catalog.nessie.s3.endpoint", "http://minio:9000")\
                             .config("spark.sql.catalog.nessie.warehouse", "s3a://warehouse")\
                             .config("spark.sql.catalog.nessie.s3.access-key-id", "admin")\
                             .config("spark.sql.catalog.nessie.s3.secret-access-key", "password")\
