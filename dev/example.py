@@ -5,6 +5,7 @@ path = "local://opt/spark/jars/"
 jars = ["bundle-2.20.18.jar", "nessie-spark-extensions-3.4_2.12-0.65.1.jar", "url-connection-client-2.20.18.jar", "iceberg-spark-runtime-3.4_2.12-1.3.0.jar", "postgresql-42.6.0.jar"]
 
 class_path = ":".join([path + jar for jar in jars])
+log_dir = "/logs/spark-events"
 
 spark = SparkSession.builder.master("k8s://https://kubernetes.default.svc.cluster.local:443") \
                             .appName("spark")\
@@ -33,8 +34,8 @@ spark = SparkSession.builder.master("k8s://https://kubernetes.default.svc.cluste
                             .config("spark.executorEnv.AWS_REGION", "eu-central-1") \
                             .config("spark.sql.defaultCatalog", "nessie")\
                             .config("spark.eventLog.enabled", "true")\
-                            .config("spark.eventLog.dir", "/home/spark/spark-events")\
-                            .config("spark.history.fs.logDirectory", "/home/spark/spark-events")\
+                            .config("spark.eventLog.dir", log_dir)\
+                            .config("spark.history.fs.logDirectory", log_dir)\
                             .config("spark.sql.catalogImplementation", "in-memory")\
                             .getOrCreate()
 

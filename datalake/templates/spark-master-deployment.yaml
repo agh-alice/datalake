@@ -1,0 +1,63 @@
+# Deployment Yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-master
+  template:
+    metadata:
+      labels:
+        app: spark-master
+    spec:
+      serviceAccountName: spark
+      containers:
+      - name: spark-master
+        image: {{ .Values.spark.master.image }}
+        imagePullPolicy: IfNotPresent
+
+        env:
+        - name: SPARK_MASTER_IMAGE
+          value: {{ .Values.spark.master.image }}
+
+        - name: SPARK_EXECUTOR_IMAGE
+          value: {{ .Values.spark.executor.image }}
+
+        - name: S3_ENDPOINT
+          value: {{ .Values.s3.endpoint }}
+
+        - name: S3_REGION
+          value: {{ .Values.s3.region }}
+
+        - name: S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.s3.secret.name }}
+              key: {{ .Values.s3.secret.access_key_id }}
+              
+        - name: S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.s3.secret.name }}
+              key: {{ .Values.s3.secret.secret_access_key }}
+        
+        - name: S3_BUCKET
+          value: {{ .Values.s3.bucket }}
+        
+        - name: NESSIE_URL
+          value: http://{{ .Chart.name }}-nessie:19120/api/v1
+
+        ports:
+        - name: notebook
+          containerPort: 8888
+        - name: driver-port
+          containerPort: 8002
+        - name: block-manager
+          containerPort: 8001
+        - name: web-ui
+          containerPort: 4040
+        - name: shuffle-service
+          containerPort: 7337

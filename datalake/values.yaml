@@ -1,0 +1,23 @@
+spark:
+  master:
+    image: nowickib/spark-master:latest
+  executor:
+    image: nowickib/spark-executor:latest
+
+s3:
+  endpoint: https://s3p.cloud.cyfronet.pl
+  region: eu-central-1 # ignored when using Minio
+  bucket: s3a://warehouse
+  secret:
+    name: s3-creds
+    access_key_id: access_key_id
+    secret_access_key: secret_access_key
+
+nessie:
+  versionStoreType: JDBC
+  postgres:
+    jdbcUrl: jdbc:postgresql://149.156.10.139:5433/nessie_data
+    secret:
+      name: nessie-postgres-creds
+      username: username
+      password: password

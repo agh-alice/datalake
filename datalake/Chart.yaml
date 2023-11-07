@@ -1,0 +1,12 @@
+apiVersion: v2
+name: datalake
+description: A Helm chart for a data lake on Kubernetes (spark, dremio, iceberg, minio)
+
+type: application
+
+version: 0.1.0
+
+dependencies:
+- name: nessie
+  version: 0.73.0
+  repository: https://charts.projectnessie.org

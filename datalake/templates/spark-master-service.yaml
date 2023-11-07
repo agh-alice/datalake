@@ -1,0 +1,25 @@
+# Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master
+spec:
+  clusterIP: None
+  selector:
+    app: spark-master
+  ports:
+  - name: shuffle-service
+    port: 7337
+    targetPort: 7337
+  - name: web-ui
+    port: 4040
+    targetPort: 4040
+  - name: block-manager
+    port: 8001
+    targetPort: 8001
+  - name: driver-port
+    port: 8002
+    targetPort: 8002
+  - name: notebook
+    port: 8888
+    targetPort: 8888

@@ -62,6 +62,7 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-cl
 ENV IJAVA_CLASSPATH=/opt/spark/jars/*
 
 RUN mkdir -p /root/.ipython/profile_default/startup
+RUN mkdir -p /logs/spark-events
 
 ENV PATH="/opt/spark/sbin:/opt/spark/bin:${PATH}"
 
