@@ -1,3 +1,4 @@
 .ipynb_checkpoints
 jars/*
 datalake/charts/*.tgz
+secrets.yaml
