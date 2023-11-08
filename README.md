@@ -1,4 +1,27 @@
-### Dremio source config
+## Deploying with helm on prod
+
+Create role with appropriate permissions for spark driver
+
+```
+kubectl create serviceaccount spark
+kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=<namespace>:spark --namespace=<namespace>
+```
+
+Deploy secret object with credentials. You can create it from template `secrets.template.yaml`
+
+```
+kubectl apply -f secrets.yaml
+```
+
+```
+cd datalake
+helm install --namespace <namespace> -f values.yaml datalake .
+```
+
+
+
+
+## Dremio source config
 
 Type: Nessie (Preview) Source
 
