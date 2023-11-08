@@ -19,7 +19,7 @@ spark = SparkSession.builder.master("k8s://https://kubernetes.default.svc.cluste
                             .config("spark.driver.extraClassPath", class_path) \
                             .config("spark.blockManager.port", "8001")\
                             .config("spark.kubernetes.namespace", os.getenv("NAMESPACE"))\
-                            .config("spark.kubernetes.container.image", "nowickib/spark-executor:0.1.0")\
+                            .config("spark.kubernetes.container.image", "nowickib/spark-executor:latest")\
                             .config("spark.kubernetes.container.image.pullPolicy", "IfNotPresent")\
                             .config("spark.kubernetes.authenticate.driver.serviceAccountName", "spark")\
                             .config("spark.kubernetes.authenticate.executor.serviceAccountName", "spark")\
@@ -34,7 +34,6 @@ spark = SparkSession.builder.master("k8s://https://kubernetes.default.svc.cluste
                             .config("spark.sql.catalog.nessie.s3.access-key-id", os.getenv("S3_ACCESS_KEY_ID"))\
                             .config("spark.sql.catalog.nessie.s3.secret-access-key", os.getenv("S3_SECRET_ACCESS_KEY"))\
                             .config("spark.sql.catalog.nessie.s3.path-style-access", "true") \
-                            .config("spark.sql.catalog.nessie.s3.region", os.getenv("S3_REGION")) \
                             .config("spark.executorEnv.AWS_REGION", os.getenv("S3_REGION")) \
                             .config("spark.sql.defaultCatalog", "nessie")\
                             .config("spark.eventLog.enabled", "true")\
