@@ -52,6 +52,9 @@ spec:
         
         - name: NAMESPACE
           value: {{ .Release.Namespace }}
+        
+        - name: AWS_REGION
+          value: {{ .Values.s3.region }}
 
         ports:
         - name: notebook
