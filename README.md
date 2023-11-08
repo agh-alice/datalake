@@ -4,13 +4,13 @@ Create role with appropriate permissions for spark driver
 
 ```
 kubectl create serviceaccount spark
-kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=<namespace>:spark --namespace=<namespace>
+kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=default:spark --namespace=<namespace>
 ```
 
 Deploy secret object with credentials. You can create it from template `secrets.template.yaml`
 
 ```
-kubectl apply -f secrets.yaml
+kubectl apply --namespace <namespace> -f secrets.yaml
 ```
 
 ```
