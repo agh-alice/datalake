@@ -64,3 +64,8 @@ df = spark.createDataFrame(data=data2,schema=schema)
 df.printSchema()
 df.show(truncate=False)
 df.writeTo("nessie.example").create()
+
+df2 = spark.read.table("nessie.example")
+df2.show()
+
+spark.stop()
