@@ -49,6 +49,9 @@ spec:
         
         - name: NESSIE_URL
           value: http://{{ .Chart.name }}-nessie:19120/api/v1
+        
+        - name: NAMESPACE
+          value: {{ .Release.Namespace }}
 
         ports:
         - name: notebook
