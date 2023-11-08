@@ -48,7 +48,7 @@ spec:
           value: {{ .Values.s3.bucket }}
         
         - name: NESSIE_URL
-          value: http://{{ .Chart.name }}-nessie:19120/api/v1
+          value: http://{{ .Chart.Name }}-nessie:19120/api/v1
         
         - name: NAMESPACE
           value: {{ .Release.Namespace }}

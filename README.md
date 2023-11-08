@@ -15,6 +15,7 @@ kubectl apply --namespace <namespace> -f secrets.yaml
 
 ```
 cd datalake
+helm dependency build
 helm install --namespace <namespace> -f values.yaml datalake .
 ```
 
