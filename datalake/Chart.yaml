@@ -10,3 +10,7 @@ dependencies:
 - name: nessie
   version: 0.73.0
   repository: https://charts.projectnessie.org
+- name: airflow
+  version: 1.11.0
+  repository: https://airflow.apache.org
+  

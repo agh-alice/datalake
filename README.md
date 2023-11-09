@@ -52,3 +52,14 @@ Connection Properties:
 - fs.s3a.path.style.access true
 - fs.s3a.endpoint minio:9000
 - dremio.s3.compat true
+
+
+#### Apache Airflow
+
+Build docker image
+```
+cd images/airflow
+docker build --pull --tag "pweglik/airflow" .
+```
+
+

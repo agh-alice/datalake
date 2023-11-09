@@ -2,3 +2,5 @@
 jars/*
 datalake/charts/*.tgz
 secrets.yaml
+dev/airflow/logs/**
+**/__pycache__

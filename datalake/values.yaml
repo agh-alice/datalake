@@ -1,8 +1,8 @@
 spark:
   master:
-    image: nowickib/spark-master:latest
+    image: pweglik/spark-master:latest
   executor:
-    image: nowickib/spark-executor:latest
+    image: pweglik/spark-executor:latest
 
 s3:
   endpoint: https://s3p.cloud.cyfronet.pl
@@ -21,3 +21,11 @@ nessie:
       name: nessie-postgres-creds
       username: username
       password: password
+
+apache-airflow:
+  airflowVersion: 2.7.3
+  images:
+    airflow:
+      pullPolicy: Always
+      repository: pweglik/airflow
+      tag: latest
