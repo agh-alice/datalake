@@ -29,5 +29,5 @@ apache-airflow:
       pullPolicy: Always
       repository: pweglik/airflow
       tag: latest
-  postgres:
+  ports:
     airflowUI: 8886
