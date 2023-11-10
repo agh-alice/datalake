@@ -1,8 +1,8 @@
 spark:
   master:
-    image: pweglik/spark-master:latest
+    image: nowickib/spark-master:latest
   executor:
-    image: pweglik/spark-executor:latest
+    image: nowickib/spark-executor:latest
 
 s3:
   endpoint: https://s3p.cloud.cyfronet.pl
