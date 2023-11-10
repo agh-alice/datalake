@@ -29,3 +29,5 @@ apache-airflow:
       pullPolicy: Always
       repository: pweglik/airflow
       tag: latest
+  postgres:
+    airflowUI: 8886
