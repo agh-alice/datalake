@@ -23,7 +23,7 @@ nessie:
       password: password
 
 apache-airflow:
-  airflowVersion: 2.7.3
+  airflowVersion: 2.7.1
   images:
     airflow:
       pullPolicy: Always
