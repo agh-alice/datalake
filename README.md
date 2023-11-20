@@ -13,6 +13,14 @@ Deploy secret object with credentials. You can create it from template `secrets.
 kubectl apply --namespace <namespace> -f secrets.yaml
 ```
 
+Build airflow docker image with DAGs embedded
+```
+cd images/airflow
+docker build --pull --tag "pweglik/airflow" .
+docker push pweglik/airflow:latest
+```
+
+Build helm chart
 ```
 cd datalake
 helm dependency build
@@ -53,13 +61,14 @@ Connection Properties:
 - fs.s3a.endpoint minio:9000
 - dremio.s3.compat true
 
-
 #### Apache Airflow
+We create airflow without admin user for safetly purposes.
+To create admin user:
+```
+kubectl exec -it --namespace <namespace> <webserver-pod-name>  -- bash 
+airflow users delete -u admin
+airflow users create --username <username> --password <password> --role Admin --firstname <firstname> --lastname <lastname> --email <email>
+```
 
-Build docker image
-```
-cd images/airflow
-docker build --pull --tag "pweglik/airflow" .
-```
 
 
