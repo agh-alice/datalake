@@ -33,3 +33,5 @@ apache-airflow:
     airflowUI: 8886
   postgresql:
     enabled: false #turns off default postgres database
+  data:
+    metadataSecretName: airflow-metadata-secret
