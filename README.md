@@ -63,6 +63,7 @@ Connection Properties:
 
 #### Apache Airflow
 We create airflow without admin user for safetly purposes.
+It is only necessary to do it once we have fresh database. No need to redo after every `helm install/upgrade`
 To create admin user:
 ```
 kubectl exec -it --namespace <namespace> <webserver-pod-name>  -- bash 
