@@ -35,3 +35,9 @@ airflow:
     enabled: false #turns off default postgres database
   data:
     metadataSecretName: airflow-metadata-secret
+  pgbouncer:
+    enabled: true
+  webserver:
+    readinessProbe:
+      initialDelaySeconds: 30
+      timeoutSeconds: 10
