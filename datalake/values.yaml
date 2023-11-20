@@ -31,3 +31,5 @@ apache-airflow:
       tag: latest
   ports:
     airflowUI: 8886
+  postgresql:
+    enabled: false #turns off default postgres database
