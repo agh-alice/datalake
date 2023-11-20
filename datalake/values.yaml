@@ -22,7 +22,7 @@ nessie:
       username: username
       password: password
 
-apache-airflow:
+airflow:
   airflowVersion: 2.7.1
   images:
     airflow:
