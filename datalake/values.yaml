@@ -38,13 +38,13 @@ airflow:
       password: admin
       role: Public # we need to change password and role manually, setting public here, so default user doesn't have access to everything be default
   dags:
-    persistance:
+    persistence:
       enabled: false
     gitSync:
       enabled: true
       repo: https://github.com/PracaInzynierskaAlice/datalake.git
       branch: master
-      subpath: 'images/airflow/dags'
+      subPath: 'images/airflow/dags'
   postgresql:
     enabled: false #turns off default postgres database
   data:
