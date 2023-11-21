@@ -28,8 +28,6 @@ helm install --namespace <namespace> -f values.yaml datalake .
 ```
 
 
-
-
 ## Dremio source config
 
 Type: Nessie (Preview) Source
@@ -37,7 +35,7 @@ Type: Nessie (Preview) Source
 #### General
 
 
-URL: http://nessie:19120/api/v2
+URL: http://datalake-nessie:19120/api/v2
 
 Auth: None
 
@@ -45,20 +43,20 @@ Auth: None
 
 Auth Type: AWS ACCESS Token
 
-AWS Aaccess Key: admin
+AWS Aaccess Key: <secret access_key_id>
 
-AWS Acess Secret: password
+AWS Acess Secret: <secret secret_access_key>
 
 IAM Role:
 
-AWS Root Path: /warehouse
+AWS Root Path: /alice-data-lake-dev
 
-Encrypt connection: false
+Encrypt connection: true
 
 Connection Properties:
 
 - fs.s3a.path.style.access true
-- fs.s3a.endpoint minio:9000
+- fs.s3a.endpoint s3p.cloud.cyfronet.pl
 - dremio.s3.compat true
 
 #### Apache Airflow
