@@ -27,7 +27,7 @@ airflow:
   images:
     airflow:
       pullPolicy: Always
-      repository: pweglik/airflow
+      repository: nowickib/airflow
       tag: latest
   webserverSecretKeySecretName: airflow-webserver-secret
   webserver:
