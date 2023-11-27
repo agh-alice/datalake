@@ -3,7 +3,7 @@ from airflow.operators.bash import BashOperator
 import datetime
 
 dag = DAG(
-    'test_spark_deployment',
+    'spark_healthcheck',
     description='Perform calculations on spark that don\'t require any dependencies',
     schedule="@hourly",
     start_date=datetime.datetime(2023, 1, 1),

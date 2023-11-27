@@ -3,7 +3,7 @@ from airflow.operators.bash import BashOperator
 import datetime
 
 dag = DAG(
-    'read_from_datalake',
+    'datalake_healthcheck',
     description='Simple DAG to test if we can read data from the datalake',
     schedule="@hourly",
     start_date=datetime.datetime(2023, 1, 1),
@@ -42,6 +42,6 @@ task = BashOperator(
     --conf spark.history.fs.logDirectory=/opt/spark/logs/spark-events \
     --conf spark.sql.catalogImplementation=in-memory \
     --name load_new_data \
-    local:///spark/debug/read_from_datalake.py',
+    local:///spark/debug/test_datalake_read.py',
     dag=dag
 )
