@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 import datetime
+from utils import DatalakeFullAccessOperator
 
 dag = DAG(
     'spark_healthcheck',
@@ -11,21 +12,9 @@ dag = DAG(
     concurrency = 1,
 )
 
-task = BashOperator(
+task = DatalakeFullAccessOperator(
     task_id='test_spark_deployment',
-    bash_command='spark-submit \
-    --master k8s://https://kubernetes.default.svc.cluster.local:443 \
-    --deploy-mode cluster \
-    --conf spark.executor.instances=1 \
-    --conf spark.kubernetes.namespace=datalake \
-    --conf spark.kubernetes.container.image=nowickib/spark-executor:latest \
-    --conf spark.kubernetes.container.image.pullPolicy=Always \
-    --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
-    --conf spark.kubernetes.authenticate.executor.serviceAccountName=spark \
-    --conf spark.eventLog.enabled=true \
-    --conf spark.eventLog.dir=/opt/spark/logs/spark-events \
-    --conf spark.history.fs.logDirectory=/opt/spark/logs/spark-events \
-    --name test_spark_deployment \
-    local:///spark/debug/test_spark_deployment.py',
+    path='debug/test_spark_deployment.py',
+    instances=1,
     dag=dag
 )
