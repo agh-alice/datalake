@@ -14,6 +14,6 @@ dag = DAG(
 # Define the BashOperator task
 hello_world_task = BashOperator(
     task_id='hello_spark_task',
-    bash_command='env',
+    bash_command='env | sort',
     dag=dag
 )
