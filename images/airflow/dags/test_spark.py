@@ -14,6 +14,6 @@ dag = DAG(
 # Define the BashOperator task
 hello_world_task = BashOperator(
     task_id='hello_spark_task',
-    bash_command='pyspark --version',
+    bash_command='ls /opt/airflow/dags',
     dag=dag
 )
