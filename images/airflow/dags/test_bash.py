@@ -14,6 +14,6 @@ dag = DAG(
 # Define the BashOperator task
 hello_world_task = BashOperator(
     task_id='hello_world_task',
-    bash_command='pip list',
+    bash_command='pip list && ls -al /opt',
     dag=dag
 )
