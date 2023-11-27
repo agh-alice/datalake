@@ -14,6 +14,6 @@ dag = DAG(
 # Define the BashOperator task
 hello_world_task = BashOperator(
     task_id='hello_spark_task',
-    bash_command='which python',
+    bash_command='which python && ls /usr/local/bin',
     dag=dag
 )
