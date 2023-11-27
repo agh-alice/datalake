@@ -14,6 +14,6 @@ dag = DAG(
 # Define the BashOperator task
 hello_world_task = BashOperator(
     task_id='hello_world_task',
-    bash_command='spark-submit --master local /opt/airflow/dags/spark_etl_script.py',
+    bash_command='spark-submit --master local /opt/airflow/dags/repo/images/airflow/dags/spark_etl_script.py',
     dag=dag
 )
