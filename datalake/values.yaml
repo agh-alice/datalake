@@ -44,7 +44,7 @@ airflow:
       enabled: true
       repo: https://github.com/PracaInzynierskaAlice/datalake.git
       branch: master
-      subPath: 'images/airflow/dags'
+      subPath: 'src/dags'
   postgresql:
     enabled: false #turns off default postgres database
   data:

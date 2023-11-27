@@ -21,4 +21,4 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/${AWSSDK_V
 RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-client/${AWSSDK_VERSION}/url-connection-client-${AWSSDK_VERSION}.jar -Lo /opt/spark/jars/url-connection-client-${AWSSDK_VERSION}.jar
 
 RUN mkdir -p /opt/spark/logs/spark-events
-COPY src /src
+COPY src/spark /spark

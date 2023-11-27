@@ -14,5 +14,3 @@ RUN export JAVA_HOME
 USER airflow
 
 RUN pip install apache-airflow-providers-apache-spark
-
-COPY --chown=airflow:root ./dags /opt/airflow/dags

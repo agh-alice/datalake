@@ -1,19 +1,16 @@
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
-from datetime import datetime
+from airflow.operators.bash import BashOperator
+import datetime
 
-# Define the DAG
 dag = DAG(
-    'test_bash',
-    description='A simple tutorial DAG',
-    schedule_interval=None,
-    start_date=datetime(2023, 3, 22),
-    catchup=False
+    'read_from_datalake',
+    description='Simple DAG to test if we can read data from the datalake',
+    schedule="@hourly",
+    start_date=datetime.datetime(2023, 1, 1),
 )
 
-# Define the BashOperator task
-hello_world_task = BashOperator(
-    task_id='hello_world_task',
+task = BashOperator(
+    task_id='read_from_datalake',
     bash_command='spark-submit \
     --master k8s://https://kubernetes.default.svc.cluster.local:443 \
     --deploy-mode cluster \
@@ -42,7 +39,7 @@ hello_world_task = BashOperator(
     --conf spark.eventLog.dir=/opt/spark/logs/spark-events \
     --conf spark.history.fs.logDirectory=/opt/spark/logs/spark-events \
     --conf spark.sql.catalogImplementation=in-memory \
-    --name spark-pi \
-    local:///src/read.py',
+    --name load_new_data \
+    local:///spark/debug/read_from_datalake.py',
     dag=dag
 )

@@ -1,3 +1,4 @@
 #!/bin/bash
-
-docker build -t nowickib/spark-executor:latest ../images/spark-executor && docker push nowickib/spark-executor:latest
+repo=nowickib
+image=airflow
+docker build -t $repo/$image:latest .. -f ../images/$image/Dockerfile && docker push $repo/$image:latest

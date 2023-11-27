@@ -1,4 +1,6 @@
-import sys
+"""
+Simple script for testing Spark deployment. Calculates approximation of Pi.
+"""
 from random import random
 from operator import add
 
@@ -6,15 +8,12 @@ from pyspark.sql import SparkSession
 
 
 if __name__ == "__main__":
-    """
-        Usage: pi [partitions]
-    """
     spark = SparkSession\
         .builder\
-        .appName("PythonPi")\
+        .appName("test_spark_deployment")\
         .getOrCreate()
 
-    partitions = int(sys.argv[1]) if len(sys.argv) > 1 else 2
+    partitions = 2
     n = 100000 * partitions
 
     def f(_: int) -> float:
