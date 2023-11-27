@@ -19,7 +19,7 @@ spark_dag = DAG(
 )
 
 Extract = SparkSubmitOperator(
-		application = "/opt/airflow/dags/spark_etl_script_docker.py",
+		application = "/opt/airflow/dags/spark_etl_script.py",
 		conn_id= 'spark_local', 
 		task_id='spark_submit_task', 
 		dag=spark_dag
