@@ -8,6 +8,7 @@ dag = DAG(
     schedule="@hourly",
     start_date=datetime.datetime(2023, 1, 1),
     catchup=False,
+    concurrency = 1,
 )
 
 task = BashOperator(

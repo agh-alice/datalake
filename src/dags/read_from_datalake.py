@@ -7,7 +7,8 @@ dag = DAG(
     description='Simple DAG to test if we can read data from the datalake',
     schedule="@hourly",
     start_date=datetime.datetime(2023, 1, 1),
-    catchup=False
+    catchup=False,
+    concurrency = 1,
 )
 
 task = BashOperator(
