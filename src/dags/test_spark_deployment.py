@@ -7,6 +7,7 @@ dag = DAG(
     description='Perform calculations on spark that don\'t require any dependencies',
     schedule="@hourly",
     start_date=datetime.datetime(2023, 1, 1),
+    catchup=False,
 )
 
 task = BashOperator(
@@ -15,6 +16,7 @@ task = BashOperator(
     --master k8s://https://kubernetes.default.svc.cluster.local:443 \
     --deploy-mode cluster \
     --conf spark.executor.instances=1 \
+    --conf spark.kubernetes.namespace=datalake \
     --conf spark.kubernetes.container.image=nowickib/spark-executor:latest \
     --conf spark.kubernetes.container.image.pullPolicy=Always \
     --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
