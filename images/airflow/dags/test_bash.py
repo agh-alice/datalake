@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Define the DAG
 dag = DAG(
-    'hello_world',
+    'test_bash',
     description='A simple tutorial DAG',
     schedule_interval=None,
     start_date=datetime(2023, 3, 22),
