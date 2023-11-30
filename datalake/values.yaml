@@ -93,8 +93,14 @@ dremio:
   distStorage:
     type: "aws"
     aws:
+      bucketName: "alice-data-lake-dev"
       path: "/dremio"
       authentication: "accessKeySecret"
+
+      credentials:
+        accessKey: access_key_id
+        secret: secret_access_key
+
       extraProperties: |
         <property>
           <name>fs.s3a.path.style.access</name>
