@@ -68,3 +68,43 @@ airflow:
     - envName: S3_SECRET_ACCESS_KEY
       secretName: s3-creds
       secretKey: secret_access_key
+
+dremio:
+  coordinator:
+    cpu: 2
+    memory: 4096
+    count: 0
+    volumeSize: 0
+
+  executor:
+    cpu: 1
+    memory: 4096
+    count: 2
+    volumeSize: 0
+    cloudCache:
+      enabled: false
+
+  zookeeper:
+    cpu: 0.5
+    memory: 1024
+    count: 3
+    volumeSize: 2Gi
+
+  distStorage:
+    type: "aws"
+    aws:
+      path: "/dremio"
+      authentication: "accessKeySecret"
+      extraProperties: |
+        <property>
+          <name>fs.s3a.path.style.access</name>
+          <value>true</value>
+        </property>
+        <property>
+          <name>fs.s3a.endpoint</name>
+          <value>s3p.cloud.cyfronet.pl</value>
+        </property>
+        <property>
+          <name>dremio.s3.compat</name>
+          <value>true</value>
+        </property>

@@ -1,0 +1,3 @@
+[submodule "dremio-cloud-tools"]
+	path = dremio-cloud-tools
+	url = https://github.com/dremio/dremio-cloud-tools.git
