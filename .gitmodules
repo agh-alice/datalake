@@ -1,0 +1,3 @@
+[submodule "dremio-cloud-tools"]
+	path = dremio-cloud-tools
+	url = git@github.com:PracaInzynierskaAlice/dremio-cloud-tools.git
