@@ -6,6 +6,7 @@
     --class org.apache.spark.examples.SparkPi \
     --conf spark.executor.instances=1 \
     --conf spark.kubernetes.container.image=spark:3.4.1 \
+    --conf spark.kubernetes.container.image.pullPolicy=Always \
     local:///opt/spark/examples/jars/spark-examples_2.12-3.4.1.jar
 
 ./bin/spark-submit \
@@ -16,6 +17,7 @@
     --class org.apache.spark.examples.SparkPi \
     --conf spark.executor.instances=1 \
     --conf spark.kubernetes.container.image=spark:3.4.1 \
+    --conf spark.kubernetes.container.image.pullPolicy=Always \
     local:///opt/spark/examples/src/main/python/pi.py
 
 ./bin/spark-submit \
@@ -26,6 +28,7 @@
     --class org.apache.spark.examples.SparkPi \
     --conf spark.executor.instances=1 \
     --conf spark.kubernetes.container.image=nowickib/spark-executor:latest \
+    --conf spark.kubernetes.container.image.pullPolicy=Always \
     local:///opt/spark/examples/src/main/python/pi.py
 
 ./bin/spark-submit \
