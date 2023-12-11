@@ -13,4 +13,7 @@ dependencies:
 - name: airflow
   version: 1.11.0
   repository: https://airflow.apache.org
-  
+- name: dremio
+  version: 2.0.0
+  repository: "file://../dremio-cloud-tools/charts/dremio_v2"
+
