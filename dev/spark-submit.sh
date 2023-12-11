@@ -5,9 +5,9 @@
     --name spark-pi \
     --class org.apache.spark.examples.SparkPi \
     --conf spark.executor.instances=1 \
-    --conf spark.kubernetes.container.image=spark:3.4.1 \
+    --conf spark.kubernetes.container.image=spark:3.4.2 \
     --conf spark.kubernetes.container.image.pullPolicy=Always \
-    local:///opt/spark/examples/jars/spark-examples_2.12-3.4.1.jar
+    local:///opt/spark/examples/jars/spark-examples_2.12-3.4.2.jar
 
 ./bin/spark-submit \
     --master k8s://https://kubernetes.default.svc.cluster.local:443 \
@@ -16,7 +16,7 @@
     --name spark-pi \
     --class org.apache.spark.examples.SparkPi \
     --conf spark.executor.instances=1 \
-    --conf spark.kubernetes.container.image=spark:3.4.1 \
+    --conf spark.kubernetes.container.image=spark:3.4.2 \
     --conf spark.kubernetes.container.image.pullPolicy=Always \
     local:///opt/spark/examples/src/main/python/pi.py
 

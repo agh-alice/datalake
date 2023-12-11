@@ -16,8 +16,8 @@ kubectl apply --namespace <namespace> -f secrets.yaml
 Build airflow docker image with DAGs embedded
 ```
 cd images/airflow
-docker build --pull --tag "pweglik/airflow" .
-docker push pweglik/airflow:latest
+docker build --pull --tag "nowickib/airflow" .
+docker push nowickib/airflow:latest
 ```
 
 Build helm chart

@@ -1,6 +1,6 @@
-FROM apache/spark:3.4.1
+FROM apache/spark:3.4.2
 
-ENV SPARK_VERSION=3.4.1
+ENV SPARK_VERSION=3.4.2
 ENV SPARK_MAJOR_VERSION=3.4
 ENV ICEBERG_VERSION=1.3.0
 ENV AWSSDK_VERSION=2.20.18
@@ -19,6 +19,11 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/${AWSSDK_V
 
 # Download URL connection client required for S3FileIO
 RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-client/${AWSSDK_VERSION}/url-connection-client-${AWSSDK_VERSION}.jar -Lo /opt/spark/jars/url-connection-client-${AWSSDK_VERSION}.jar
+
+USER root
+RUN pip install psycopg2-binary
+
+USER ${SPARK_UID}
 
 RUN mkdir -p /opt/spark/logs/spark-events
 COPY src/spark /spark
