@@ -67,3 +67,12 @@ spec:
           containerPort: 4040
         - name: shuffle-service
           containerPort: 7337
+
+        volumeMounts:
+          - name: notebook-volume
+            mountPath: /opt/spark/notebooks
+
+      volumes:
+        - name: notebook-volume
+          persistentVolumeClaim:
+            claimName: spark-master-pvc
