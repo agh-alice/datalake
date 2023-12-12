@@ -74,13 +74,13 @@ dremio:
     cpu: 2
     memory: 4096
     count: 0
-    volumeSize: 0
+    volumeSize: 10Gi
 
   executor:
     cpu: 1
     memory: 4096
     count: 2
-    volumeSize: 0
+    volumeSize: 10Gi
     cloudCache:
       enabled: false
 
