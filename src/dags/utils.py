@@ -10,7 +10,7 @@ class DatalakeFullAccessOperator(BashOperator):
             --master k8s://https://kubernetes.default.svc.cluster.local:443 \
             --deploy-mode cluster \
             --conf spark.executor.instances={instances} \
-            --conf spark.driver.extraClassPath=local://opt/spark/jars/bundle-2.20.18.jar:local://opt/spark/jars/nessie-spark-extensions-3.4_2.12-0.65.1.jar:local://opt/spark/jars/url-connection-client-2.20.18.jar:local://opt/spark/jars/iceberg-spark-runtime-3.4_2.12-1.3.0.jar:local://opt/spark/jars/postgresql-42.6.0.jar \
+            --conf spark.driver.extraClassPath=local://opt/spark/jars/bundle-2.20.18.jar:local://opt/spark/jars/nessie-spark-extensions-3.4_2.12-0.74.0.jar:local://opt/spark/jars/url-connection-client-2.20.18.jar:local://opt/spark/jars/iceberg-spark-runtime-3.4_2.12-1.3.0.jar:local://opt/spark/jars/postgresql-42.6.0.jar \
             --conf spark.kubernetes.namespace=datalake \
             --conf spark.kubernetes.container.image=nowickib/spark-executor:latest \
             --conf spark.kubernetes.container.image.pullPolicy=Always \

@@ -5,7 +5,7 @@ import os
 
 
 path = "local://opt/spark/jars/"
-jars = ["bundle-2.20.18.jar", "nessie-spark-extensions-3.4_2.12-0.65.1.jar", "url-connection-client-2.20.18.jar", "iceberg-spark-runtime-3.4_2.12-1.3.0.jar", "postgresql-42.6.0.jar"]
+jars = ["bundle-2.20.18.jar", "nessie-spark-extensions-3.4_2.12-0.74.0.jar", "url-connection-client-2.20.18.jar", "iceberg-spark-runtime-3.4_2.12-1.3.0.jar", "postgresql-42.6.0.jar"]
 
 class_path = ":".join([path + jar for jar in jars])
 log_dir = "/logs/spark-events"
