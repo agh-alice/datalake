@@ -14,7 +14,7 @@ dag = DAG(
 
 task = DatalakeFullAccessOperator(
     task_id='postgres_dump',
-    path='debug/postgres_dump.py',
+    path='postgres_dump.py',
     instances=1,
     dag=dag
 )
