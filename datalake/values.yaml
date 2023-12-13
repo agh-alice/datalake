@@ -74,13 +74,13 @@ dremio:
     cpu: 2
     memory: 4096
     count: 0
-    volumeSize: 10Gi
+    volumeSize: 1Gi
 
   executor:
     cpu: 1
     memory: 4096
     count: 2
-    volumeSize: 10Gi
+    volumeSize: 0
     cloudCache:
       enabled: false
 
@@ -88,7 +88,7 @@ dremio:
     cpu: 0.5
     memory: 1024
     count: 3
-    volumeSize: 2Gi
+    volumeSize: 512Mi
 
   distStorage:
     type: "aws"
