@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     cursor = conn.cursor()
     
-    oldest_jobs_ids_query = f"SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC LIMIT 1000"
+    oldest_jobs_ids_query = f"SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC"
     
     oldest_jobs_ids =  spark.read\
             .format("jdbc")\
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             .option("driver", "org.postgresql.Driver")\
             .option("query", f"SELECT * FROM trace WHERE job_id IN ({job_ids_str})").load()
 
-        spark.sql("CREATE BRANCH temp IN nessie")
+        spark.sql("MERGE BRANCH main INTO temp IN nessie")
         spark.sql("USE REFERENCE temp IN nessie")
         
         if not spark.catalog.tableExists("nessie.job_info"):
@@ -105,7 +105,6 @@ if __name__ == "__main__":
 
         spark.sql("MERGE BRANCH temp INTO main IN nessie")
         spark.sql("USE REFERENCE main IN nessie")
-        spark.sql("DROP BRANCH IF EXISTS temp IN nessie")
 
         
         cursor.execute(sql.SQL(f"DELETE FROM job_info WHERE job_id IN ({job_ids_str})"))
