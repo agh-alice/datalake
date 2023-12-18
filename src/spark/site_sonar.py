@@ -42,7 +42,7 @@ def main():
 
     df = df.withColumn("batch_index", F.lit(last_index+1))
     old_columns = spark.read.table(OUTPUT_TABLE).columns
-    new_columns = [col for col in df.columns if col in old_columns] + [col for col in df.columns if col not in old_columns]
+    new_columns = [col for col in old_columns if col in df.columns] + [col for col in df.columns if col not in old_columns]
 
     df.select(*new_columns).writeTo(OUTPUT_TABLE).partitionedBy("batch_index").option("mergeSchema","true").append()
 
