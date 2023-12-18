@@ -21,7 +21,7 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/${AWSSDK_V
 RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-client/${AWSSDK_VERSION}/url-connection-client-${AWSSDK_VERSION}.jar -Lo /opt/spark/jars/url-connection-client-${AWSSDK_VERSION}.jar
 
 USER root
-RUN pip install psycopg2-binary
+RUN pip install psycopg2-binary requests
 
 USER spark
 

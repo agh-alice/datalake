@@ -71,6 +71,6 @@
     --conf spark.history.fs.logDirectory=/opt/spark/logs/spark-events \
     --conf spark.sql.catalogImplementation=in-memory \
     --name spark-pi \
-    local:///src/read.py
+    local:///spark/debug/read.py
 
 

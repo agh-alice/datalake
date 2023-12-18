@@ -4,7 +4,7 @@ import datetime
 from utils import DatalakeFullAccessOperator
 
 dag = DAG(
-    'postgres_data_dump',
+    'data_dump',
     description='DAG moving data from PostgreSQL database to S3',
     schedule="@daily",
     start_date=datetime.datetime(2023, 1, 1),
@@ -12,9 +12,18 @@ dag = DAG(
     concurrency = 1,
 )
 
-task = DatalakeFullAccessOperator(
+postgres_dump = DatalakeFullAccessOperator(
     task_id='postgres_dump',
     path='postgres_dump.py',
     instances=1,
     dag=dag
 )
+
+site_sonar_dump = DatalakeFullAccessOperator(
+    task_id='site_sonar_dump',
+    path='site_sonar.py',
+    instances=4,
+    dag=dag
+)
+
+postgres_dump >> site_sonar_dump
