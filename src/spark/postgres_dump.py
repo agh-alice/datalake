@@ -45,7 +45,7 @@ if __name__ == "__main__":
     for i in range(0, len(oldest_jobs_ids), limit):
         print(f'Batch {i // limit + 1}/{len(oldest_jobs_ids) // limit + 1}')
     
-        job_ids = oldest_jobs_ids[i:min(i + limit, len(oldest_jobs_ids) - 1)]
+        job_ids = oldest_jobs_ids[i:min(i + limit - 1, len(oldest_jobs_ids))]
         job_ids_str = ','.join([str(job_id) for job_id in job_ids])
     
         job_info_df = spark.read\
