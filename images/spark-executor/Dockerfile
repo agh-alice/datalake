@@ -23,7 +23,7 @@ RUN curl https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-cl
 USER root
 RUN pip install psycopg2-binary
 
-USER ${SPARK_UID}
+USER spark
 
 RUN mkdir -p /opt/spark/logs/spark-events
 COPY src/spark /spark
