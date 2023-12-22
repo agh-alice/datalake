@@ -2,6 +2,7 @@
 Move data from PostgreSQL database to S3 bucket.
 """
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, concat, col, lit, coalesce
 import psycopg2
 from psycopg2 import sql
 
@@ -72,6 +73,15 @@ if __name__ == "__main__":
             .option("driver", "org.postgresql.Driver")\
             .option("query", f"SELECT * FROM mon_jdls WHERE job_id IN ({job_ids_str})").load()
 
+        # JDL parsing
+        json_schema = spark.read.json(mon_jdls_df.rdd.map(lambda row: row.full_jdl)).schema
+        df_aux =  mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select("job_id", "jsonData.*")
+
+        df_aux = df_aux.withColumn("LPMPASSNAME_MERGED", concat(coalesce(col("LPMPASSNAME"), lit('')), coalesce(col("LPMPassName"), lit(''))))
+
+        df_aux = df_aux.drop('LPMPASSNAME')
+        mon_jdls_df = df_aux.withColumnRenamed("LPMPASSNAME_MERGED","LPMPASSNAME")
+
         trace_df = spark.read\
             .format("jdbc")\
             .option("url", url)\
@@ -94,9 +104,9 @@ if __name__ == "__main__":
             mon_jobs_df.writeTo("nessie.mon_jobs_data_v3").append()
         
         if not spark.catalog.tableExists("nessie.mon_jdls"):
-            mon_jdls_df.writeTo("nessie.mon_jdls").create()
+            mon_jdls_df.writeTo("nessie.mon_jdls_parsed").create()
         else:
-            mon_jdls_df.writeTo("nessie.mon_jdls").append()
+            mon_jdls_df.writeTo("nessie.mon_jdls_parsed").option("mergeSchema","true").append()
 
         if not spark.catalog.tableExists("nessie.trace"):
             trace_df.writeTo("nessie.trace").create()
