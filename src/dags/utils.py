@@ -34,6 +34,7 @@ class DatalakeFullAccessOperator(BashOperator):
             --conf spark.eventLog.dir=/opt/spark/logs/spark-events \
             --conf spark.history.fs.logDirectory=/opt/spark/logs/spark-events \
             --conf spark.sql.catalogImplementation=in-memory \
+            --conf spark.sql.caseSensitive=true\
             --name {task_id} \
             local:///spark/{path}',
             dag=dag,
