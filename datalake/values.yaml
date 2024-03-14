@@ -29,7 +29,7 @@ airflow:
       pullPolicy: Always
       repository: nowickib/airflow
       tag: latest
-  webserverSecretKeySecretName: airflow-webserver-secret # this is where postgress creds gpo
+  webserverSecretKeySecretName: airflow-webserver-secret
   webserver:
     startupProbe:
       periodSeconds: 120
