@@ -83,7 +83,7 @@ if __name__ == "__main__":
             # JDL parsing
             logger.info("Parsing JSON schema for mon_jdls")
             json_schema = spark.read.json(mon_jdls_df.rdd.map(lambda row: row.full_jdl)).schema
-            json_schema = spark.sql("SELECT * FROM nessie.mon_jdls_parsed LIMIT 1").drop('job_id').drop('LPMPASSNAME').schema
+            json_schema = spark.sql("SELECT * FROM nessie.mon_jdls_parsed_after_nov_2024 LIMIT 1").drop('job_id').drop('LPMPASSNAME').schema
             json_schema = json_schema.add('LPMPASSNAME', StringType(), True).add('LPMPassName', StringType(), True)
 
             df_aux = mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select("job_id", "jsonData.*")
@@ -118,13 +118,13 @@ if __name__ == "__main__":
                 logger.info("Appending to nessie.mon_jobs_data_v3")
                 mon_jobs_df.writeTo("nessie.mon_jobs_data_v3").append()
 
-            if not spark.catalog.tableExists("nessie.mon_jdls_parsed"):
-                logger.info("Creating new table nessie.mon_jdls_parsed")
-                mon_jdls_df.writeTo("nessie.mon_jdls_parsed").create()
+            if not spark.catalog.tableExists("nessie.mon_jdls_parsed_after_nov_2024"):
+                logger.info("Creating new table nessie.mon_jdls_parsed_after_nov_2024")
+                mon_jdls_df.writeTo("nessie.mon_jdls_parsed_after_nov_2024").create()
             else:
-                logger.info("Merging schema for nessie.mon_jdls_parsed and appending data")
+                logger.info("Merging schema for nessie.mon_jdls_parsed_after_nov_2024 and appending data")
                 spark.sql("USE REFERENCE main IN nessie")
-                mon_jdls_df.writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").append()
+                mon_jdls_df.writeTo("nessie.mon_jdls_parsed_after_nov_2024").option("mergeSchema", "true").append()
                 spark.sql("USE REFERENCE temp IN nessie")
 
             if not spark.catalog.tableExists("nessie.trace"):
