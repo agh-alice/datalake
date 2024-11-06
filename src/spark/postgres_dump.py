@@ -32,7 +32,7 @@ if __name__ == "__main__":
     cursor = conn.cursor()
 
     logger.info("Fetching job IDs older than 7 days")
-    oldest_jobs_ids_query = f"SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC"
+    oldest_jobs_ids_query = "SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC"
 
     oldest_jobs_ids = spark.read \
         .format("jdbc") \
@@ -83,7 +83,7 @@ if __name__ == "__main__":
             # JDL parsing
             logger.info("Parsing JSON schema for mon_jdls")
             json_schema = spark.read.json(mon_jdls_df.rdd.map(lambda row: row.full_jdl)).schema
-            json_schema = spark.sql("SELECT * FROM nessie.mon_jdls_parsed_after_nov_2024 LIMIT 1").drop('job_id').drop('LPMPASSNAME').schema
+            json_schema = spark.sql("SELECT * FROM nessie.mon_jdls_parsed LIMIT 1").drop('job_id').drop('LPMPASSNAME').schema
             json_schema = json_schema.add('LPMPASSNAME', StringType(), True).add('LPMPassName', StringType(), True)
 
             df_aux = mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select("job_id", "jsonData.*")
@@ -100,10 +100,10 @@ if __name__ == "__main__":
                 .option("driver", "org.postgresql.Driver") \
                 .option("query", f"SELECT * FROM trace WHERE job_id IN ({job_ids_str})").load()
 
-            logger.info("Merging data into Nessie branches")
-            spark.sql("MERGE BRANCH main INTO temp IN nessie")
-            spark.sql("USE REFERENCE temp IN nessie")
+            logger.info("Writing data to Nessie main branch")
+            spark.sql("USE REFERENCE main IN nessie")
 
+            # Write to main branch for each table, handling schema evolution
             if not spark.catalog.tableExists("nessie.job_info"):
                 logger.info("Creating new table nessie.job_info")
                 job_info_df.writeTo("nessie.job_info").create()
@@ -118,14 +118,12 @@ if __name__ == "__main__":
                 logger.info("Appending to nessie.mon_jobs_data_v3")
                 mon_jobs_df.writeTo("nessie.mon_jobs_data_v3").append()
 
-            if not spark.catalog.tableExists("nessie.mon_jdls_parsed_after_nov_2024"):
-                logger.info("Creating new table nessie.mon_jdls_parsed_after_nov_2024")
-                mon_jdls_df.writeTo("nessie.mon_jdls_parsed_after_nov_2024").create()
+            if not spark.catalog.tableExists("nessie.mon_jdls_parsed"):
+                logger.info("Creating new table nessie.mon_jdls_parsed")
+                mon_jdls_df.writeTo("nessie.mon_jdls_parsed").create()
             else:
-                logger.info("Merging schema for nessie.mon_jdls_parsed_after_nov_2024 and appending data")
-                spark.sql("USE REFERENCE main IN nessie")
-                mon_jdls_df.writeTo("nessie.mon_jdls_parsed_after_nov_2024").option("mergeSchema", "true").append()
-                spark.sql("USE REFERENCE temp IN nessie")
+                logger.info("Merging schema for nessie.mon_jdls_parsed and appending data")
+                mon_jdls_df.writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").append()
 
             if not spark.catalog.tableExists("nessie.trace"):
                 logger.info("Creating new table nessie.trace")
@@ -133,9 +131,6 @@ if __name__ == "__main__":
             else:
                 logger.info("Appending to nessie.trace")
                 trace_df.writeTo("nessie.trace").append()
-
-            spark.sql("MERGE BRANCH temp INTO main IN nessie")
-            spark.sql("USE REFERENCE main IN nessie")
 
             logger.info("Deleting processed records from PostgreSQL")
             cursor.execute(sql.SQL(f"DELETE FROM job_info WHERE job_id IN ({job_ids_str})"))
