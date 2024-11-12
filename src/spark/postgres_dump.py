@@ -1,6 +1,6 @@
 import logging
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, concat, col, lit, coalesce
+from pyspark.sql.functions import from_json, concat, col, lit, coalesce, broadcast
 from pyspark.sql.types import StringType
 import psycopg2
 from psycopg2 import sql
@@ -11,7 +11,13 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     logger.info("Starting Spark session")
-    spark = SparkSession.builder.appName("postgres_dump").getOrCreate()
+    spark = SparkSession.builder \
+        .appName("postgres_dump") \
+        .config("spark.executor.memory", "4g") \
+        .config("spark.executor.cores", "4") \
+        .config("spark.driver.memory", "4g") \
+        .config("spark.sql.shuffle.partitions", "200") \
+        .getOrCreate()
 
     url = "jdbc:postgresql://149.156.10.139:5432/mon_data"
     properties = {
@@ -34,15 +40,18 @@ if __name__ == "__main__":
     logger.info("Fetching job IDs older than 7 days")
     oldest_jobs_ids_query = "SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC"
 
+    # Optimized JDBC read with partitioning
     oldest_jobs_ids = spark.read \
         .format("jdbc") \
         .option("url", url) \
+        .option("dbtable", f"({oldest_jobs_ids_query}) AS oldest_jobs") \
         .option("user", "mon_user") \
         .option("password", "cern") \
         .option("driver", "org.postgresql.Driver") \
-        .option("query", oldest_jobs_ids_query).load()
+        .option("fetchsize", "1000") \
+        .load()
 
-    oldest_jobs_ids = oldest_jobs_ids.rdd.map(lambda row: row.job_id).collect()
+    oldest_jobs_ids = oldest_jobs_ids.repartition(100, "job_id").rdd.map(lambda row: row.job_id).collect()
 
     logger.info(f"Number of job IDs to process: {len(oldest_jobs_ids)}")
 
@@ -57,33 +66,40 @@ if __name__ == "__main__":
             job_info_df = spark.read \
                 .format("jdbc") \
                 .option("url", url) \
+                .option("dbtable", f"(SELECT * FROM job_info WHERE job_id IN ({job_ids_str})) AS job_info") \
                 .option("user", "mon_user") \
                 .option("password", "cern") \
                 .option("driver", "org.postgresql.Driver") \
-                .option("query", f"SELECT * FROM job_info WHERE job_id IN ({job_ids_str})").load()
+                .option("fetchsize", "1000") \
+                .load()
+
+            job_info_df.cache()
 
             logger.info("Loading mon_jobs_data_v3 data from PostgreSQL")
             mon_jobs_df = spark.read \
                 .format("jdbc") \
                 .option("url", url) \
+                .option("dbtable", f"(SELECT * FROM mon_jobs_data_v3 WHERE job_id IN ({job_ids_str})) AS mon_jobs_data") \
                 .option("user", "mon_user") \
                 .option("password", "cern") \
                 .option("driver", "org.postgresql.Driver") \
-                .option("query", f"SELECT * FROM mon_jobs_data_v3 WHERE job_id IN ({job_ids_str})").load()
+                .option("fetchsize", "1000") \
+                .load()
 
             logger.info("Loading mon_jdls data from PostgreSQL")
             mon_jdls_df = spark.read \
                 .format("jdbc") \
                 .option("url", url) \
+                .option("dbtable", f"(SELECT * FROM mon_jdls WHERE job_id IN ({job_ids_str})) AS mon_jdls") \
                 .option("user", "mon_user") \
                 .option("password", "cern") \
                 .option("driver", "org.postgresql.Driver") \
-                .option("query", f"SELECT * FROM mon_jdls WHERE job_id IN ({job_ids_str})").load()
+                .option("fetchsize", "1000") \
+                .load()
 
-            # JDL parsing
+            # JDL parsing with optimized schema handling
             logger.info("Parsing JSON schema for mon_jdls")
             json_schema = spark.read.json(mon_jdls_df.rdd.map(lambda row: row.full_jdl)).schema
-            json_schema = spark.sql("SELECT * FROM nessie.mon_jdls_parsed LIMIT 1").drop('job_id').drop('LPMPASSNAME').schema
             json_schema = json_schema.add('LPMPASSNAME', StringType(), True).add('LPMPassName', StringType(), True)
 
             df_aux = mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select("job_id", "jsonData.*")
@@ -95,10 +111,15 @@ if __name__ == "__main__":
             trace_df = spark.read \
                 .format("jdbc") \
                 .option("url", url) \
+                .option("dbtable", f"(SELECT * FROM trace WHERE job_id IN ({job_ids_str})) AS trace") \
                 .option("user", "mon_user") \
                 .option("password", "cern") \
                 .option("driver", "org.postgresql.Driver") \
-                .option("query", f"SELECT * FROM trace WHERE job_id IN ({job_ids_str})").load()
+                .option("fetchsize", "1000") \
+                .load()
+
+            # Use broadcast for smaller DataFrames if needed
+            mon_jdls_df = broadcast(mon_jdls_df)
 
             logger.info("Writing data to Nessie main branch")
             spark.sql("USE REFERENCE main IN nessie")
@@ -133,10 +154,13 @@ if __name__ == "__main__":
                 trace_df.writeTo("nessie.trace").append()
 
             logger.info("Deleting processed records from PostgreSQL")
-            cursor.execute(sql.SQL(f"DELETE FROM job_info WHERE job_id IN ({job_ids_str})"))
-            cursor.execute(sql.SQL(f"DELETE FROM mon_jobs_data_v3 WHERE job_id IN ({job_ids_str})"))
-            cursor.execute(sql.SQL(f"DELETE FROM mon_jdls WHERE job_id IN ({job_ids_str})"))
-            cursor.execute(sql.SQL(f"DELETE FROM trace WHERE job_id IN ({job_ids_str})"))
+            batch_size = 100
+            for j in range(0, len(job_ids), batch_size):
+                batch_job_ids = job_ids[j:j + batch_size]
+                cursor.execute(sql.SQL(f"DELETE FROM job_info WHERE job_id IN ({','.join(map(str, batch_job_ids))})"))
+                cursor.execute(sql.SQL(f"DELETE FROM mon_jobs_data_v3 WHERE job_id IN ({','.join(map(str, batch_job_ids))})"))
+                cursor.execute(sql.SQL(f"DELETE FROM mon_jdls WHERE job_id IN ({','.join(map(str, batch_job_ids))})"))
+                cursor.execute(sql.SQL(f"DELETE FROM trace WHERE job_id IN ({','.join(map(str, batch_job_ids))})"))
 
             conn.commit()
 
@@ -145,5 +169,6 @@ if __name__ == "__main__":
             conn.rollback()
 
     cursor.close()
+    conn.close()
     logger.info("Closing Spark session")
     spark.stop()
