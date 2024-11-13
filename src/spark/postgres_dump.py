@@ -61,10 +61,8 @@ if __name__ == "__main__":
     ).select("full_jdl")
     json_schema = spark.read.json(sample_json.rdd.map(lambda row: row.full_jdl)).schema
 
-    # Remove duplicate field if it exists
-    logger.info("Delete duplicated LPMPASSNAME")
-    if "LPMPASSNAME" in [field.name for field in json_schema.fields]:
-        json_schema = StructType([field for field in json_schema.fields if field.name != "LPMPASSNAME"])
+    # Check if LPMPassName exists in the inferred schema
+    lpm_passname_exists = "LPMPassName" in [field.name for field in json_schema.fields]
 
     for i in range(0, len(oldest_jobs_ids), limit):
         logger.info(f"Processing batch {i // limit + 1} of {len(oldest_jobs_ids) // limit + 1}")
@@ -97,7 +95,7 @@ if __name__ == "__main__":
                 .load() \
                 .repartition("job_id")
 
-            # Load and parse mon_jdls data
+            # Load and parse mon_jdls data with LPMPassName handling
             mon_jdls_df = spark.read \
                 .format("jdbc") \
                 .option("url", url) \
@@ -107,11 +105,18 @@ if __name__ == "__main__":
                 .option("driver", "org.postgresql.Driver") \
                 .option("fetchsize", "1000") \
                 .load() \
-                .withColumn("jsonData", from_json("full_jdl", json_schema)) \
-                .select(
-                col("job_id"),
-                coalesce(col("jsonData.LPMPassName"), lit('')).alias("LPMPASSNAME")
-            )
+                .withColumn("jsonData", from_json("full_jdl", json_schema))
+
+            if lpm_passname_exists:
+                mon_jdls_df = mon_jdls_df.select(
+                    col("job_id"),
+                    coalesce(col("jsonData.LPMPassName"), lit('')).alias("LPMPASSNAME")
+                )
+            else:
+                mon_jdls_df = mon_jdls_df.select(
+                    col("job_id"),
+                    lit(None).alias("LPMPASSNAME")
+                )
 
             # Load trace data
             trace_df = spark.read \
