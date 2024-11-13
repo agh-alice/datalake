@@ -1,7 +1,7 @@
 import logging
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, coalesce, col, lit, broadcast
-from pyspark.sql.types import StructType
+from pyspark.sql.types import StructType, StringType
 import psycopg2
 from psycopg2 import sql
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
                 .option("driver", "org.postgresql.Driver") \
                 .option("fetchsize", "1000") \
                 .load() \
-                .repartition("job_id")
+                .fillna("").repartition("job_id")
             job_info_df.cache()
 
             # Load mon_jobs_data_v3 data
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                 .option("driver", "org.postgresql.Driver") \
                 .option("fetchsize", "1000") \
                 .load() \
-                .repartition("job_id")
+                .fillna("").repartition("job_id")
 
             # Load and parse mon_jdls data with LPMPassName handling
             mon_jdls_df = spark.read \
@@ -115,7 +115,7 @@ if __name__ == "__main__":
             else:
                 mon_jdls_df = mon_jdls_df.select(
                     col("job_id"),
-                    lit(None).alias("LPMPASSNAME")
+                    lit('').alias("LPMPASSNAME")
                 )
 
             # Load trace data
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                 .option("driver", "org.postgresql.Driver") \
                 .option("fetchsize", "1000") \
                 .load() \
-                .repartition("job_id")
+                .fillna("").repartition("job_id")
 
             # Use broadcast for smaller DataFrames if necessary
             mon_jdls_df = broadcast(mon_jdls_df)
