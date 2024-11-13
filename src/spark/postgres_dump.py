@@ -102,10 +102,22 @@ if __name__ == "__main__":
             json_schema = spark.read.json(mon_jdls_df.rdd.map(lambda row: row.full_jdl)).schema
             json_schema = json_schema.add('LPMPASSNAME', StringType(), True).add('LPMPassName', StringType(), True)
 
-            df_aux = mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select("job_id", "jsonData.*")
-            df_aux = df_aux.withColumn("LPMPASSNAME_MERGED", concat(coalesce(col("LPMPASSNAME"), lit('')), coalesce(col("LPMPassName"), lit(''))))
-            df_aux = df_aux.drop('LPMPASSNAME').drop('LPMPassName')
-            mon_jdls_df = df_aux.withColumnRenamed("LPMPASSNAME_MERGED", "LPMPASSNAME")
+            # Select and rename columns to avoid ambiguity
+            df_aux = mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select(
+                col("job_id"),
+                col("jsonData.LPMPASSNAME").alias("LPMPASSNAME_json"),
+                col("jsonData.LPMPassName").alias("LPMPassName_json")
+            )
+
+            # Combine columns without ambiguity
+            df_aux = df_aux.withColumn(
+                "LPMPASSNAME_MERGED",
+                concat(coalesce(col("LPMPASSNAME_json"), lit('')), coalesce(col("LPMPassName_json"), lit('')))
+            )
+
+            # Drop intermediary columns and rename for final output
+            df_aux = df_aux.drop('LPMPASSNAME_json', 'LPMPassName_json').withColumnRenamed("LPMPASSNAME_MERGED", "LPMPASSNAME")
+            mon_jdls_df = df_aux
 
             logger.info("Loading trace data from PostgreSQL")
             trace_df = spark.read \
