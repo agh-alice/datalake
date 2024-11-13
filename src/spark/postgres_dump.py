@@ -144,14 +144,11 @@ if __name__ == "__main__":
 
             # Delete processed records in batch
             logger.info("Deleting processed records from PostgreSQL")
-            delete_query_template = "DELETE FROM {table} WHERE job_id IN %s"
-            job_ids_chunks = [tuple(job_ids[j:j + batch_size]) for j in range(0, len(job_ids), batch_size)]
-            for table in ["job_info", "mon_jobs_data_v3", "mon_jdls", "trace"]:
-                for chunk in job_ids_chunks:
-                    cursor.execute(sql.SQL(delete_query_template).format(table=sql.Identifier(table)), [chunk])
-
+            cursor.execute(sql.SQL(f"DELETE FROM job_info WHERE job_id IN ({job_ids_str})"))
+            cursor.execute(sql.SQL(f"DELETE FROM mon_jobs_data_v3 WHERE job_id IN ({job_ids_str})"))
+            cursor.execute(sql.SQL(f"DELETE FROM mon_jdls WHERE job_id IN ({job_ids_str})"))
+            cursor.execute(sql.SQL(f"DELETE FROM trace WHERE job_id IN ({job_ids_str})"))
             logger.info("Finished deleting records from PostgreSQL")
-
             conn.commit()
 
         except Exception as e:
