@@ -1,7 +1,7 @@
 import logging
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, concat, col, lit, coalesce, broadcast
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StructType, StringType
 import psycopg2
 from psycopg2 import sql
 
@@ -101,8 +101,9 @@ if __name__ == "__main__":
             logger.info("Parsing JSON schema for mon_jdls")
             json_schema = spark.read.json(mon_jdls_df.rdd.map(lambda row: row.full_jdl)).schema
 
-            # Drop duplicate fields to avoid ambiguity
-            json_schema = json_schema.drop("LPMPASSNAME") if "LPMPASSNAME" in json_schema.names else json_schema
+            # Remove duplicate field if it exists
+            if "LPMPASSNAME" in [field.name for field in json_schema.fields]:
+                json_schema = StructType([field for field in json_schema.fields if field.name != "LPMPASSNAME"])
 
             # Select and rename columns to avoid ambiguity
             df_aux = mon_jdls_df.withColumn('jsonData', from_json(mon_jdls_df.full_jdl, json_schema)).select(
