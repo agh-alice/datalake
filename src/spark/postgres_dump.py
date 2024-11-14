@@ -14,7 +14,7 @@ if __name__ == "__main__":
     spark = SparkSession.builder \
         .appName("postgres_dump") \
         .config("spark.executor.memory", "8g") \
-        .config("spark.executor.cores", "8") \
+        .config("spark.executor.cores", "10") \
         .config("spark.driver.memory", "8g") \
         .config("spark.sql.shuffle.partitions", "200") \
         .getOrCreate()
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         port="5432"
     )
 
-    limit = 1000
+    limit = 10000
     cursor = conn.cursor()
 
     logger.info("Fetching job IDs older than 7 days")
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         .option("driver", "org.postgresql.Driver") \
         .option("fetchsize", "1000") \
         .load() \
-        .repartition(8, "job_id") \
+        .repartition(10, "job_id") \
         .rdd.map(lambda row: row.job_id).collect()
 
     logger.info(f"Number of job IDs to process: {len(oldest_jobs_ids)}")
