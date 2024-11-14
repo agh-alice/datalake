@@ -37,7 +37,7 @@ def fetch_job_ids(spark, url, properties):
     logger.info(f"Fetched {len(job_ids)} job IDs")
     return job_ids
 
-def process_batch(job_ids_batch, url, properties, json_schema, lpm_passname_exists):
+def process_batch(spark, job_ids_batch, url, properties, json_schema, lpm_passname_exists):
     """Process a single batch of job IDs."""
     job_ids_str = ','.join([str(job_id) for job_id in job_ids_batch])
     logger.info(f"Processing batch of job IDs: {job_ids_str}")
@@ -49,8 +49,6 @@ def process_batch(job_ids_batch, url, properties, json_schema, lpm_passname_exis
     cursor = conn.cursor()
 
     try:
-        spark = SparkSession.builder.getOrCreate()
-
         # Load job_info data
         logger.info("Loading job_info data for batch")
         job_info_df = spark.read \
@@ -162,7 +160,7 @@ if __name__ == "__main__":
 
     logger.info("Starting parallel batch processing")
     spark.sparkContext.parallelize([oldest_jobs_ids[i:i + limit] for i in range(0, len(oldest_jobs_ids), limit)]) \
-        .foreachPartition(lambda job_ids_batch: process_batch(job_ids_batch, url, properties, json_schema, lpm_passname_exists))
+        .foreachPartition(lambda job_ids_batch: process_batch(spark, job_ids_batch, url, properties, json_schema, lpm_passname_exists))
 
     logger.info("Processing complete.")
     spark.stop()
