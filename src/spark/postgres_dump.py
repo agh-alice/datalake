@@ -14,7 +14,7 @@ if __name__ == "__main__":
     spark = SparkSession.builder \
         .appName("postgres_dump") \
         .config("spark.executor.memory", "8g") \
-        .config("spark.executor.cores", "4") \
+        .config("spark.executor.cores", "8") \
         .config("spark.driver.memory", "8g") \
         .config("spark.sql.shuffle.partitions", "200") \
         .getOrCreate()
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         port="5432"
     )
 
-    limit = 500
+    limit = 1000
     cursor = conn.cursor()
 
     logger.info("Fetching job IDs older than 7 days")
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         .option("driver", "org.postgresql.Driver") \
         .option("fetchsize", "1000") \
         .load() \
-        .repartition(100, "job_id") \
+        .repartition(8, "job_id") \
         .rdd.map(lambda row: row.job_id).collect()
 
     logger.info(f"Number of job IDs to process: {len(oldest_jobs_ids)}")
@@ -139,10 +139,10 @@ if __name__ == "__main__":
             logger.info("Writing data to Nessie main branch")
             spark.sql("USE REFERENCE main IN nessie")
 
-            job_info_df.writeTo("nessie.job_info").option("numPartitions", 10).append()
-            mon_jobs_df.writeTo("nessie.mon_jobs_data_v3").option("mergeSchema", "true").option("numPartitions", 10).append()
-            mon_jdls_df.writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").option("numPartitions", 10).append()
-            trace_df.writeTo("nessie.trace").append()
+            job_info_df.coalesce(10).writeTo("nessie.job_info").option("numPartitions", 10).append()
+            mon_jobs_df.coalesce(10).writeTo("nessie.mon_jobs_data_v3").option("mergeSchema", "false").option("numPartitions", 10).append()
+            mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").option("numPartitions", 10).append()
+            trace_df.coalesce(10).writeTo("nessie.trace").append()
 
             # Accumulate processed job IDs for batch deletion after processing
             all_processed_job_ids.extend(job_ids)
