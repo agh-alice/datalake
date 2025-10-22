@@ -1,9 +1,10 @@
 import logging
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, coalesce, col, lit, broadcast
+from pyspark.sql.functions import from_json, coalesce, col, lit, broadcast, udf
 from pyspark.sql.types import StructType, StringType
 import psycopg2
 from psycopg2 import sql
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -53,6 +54,30 @@ if __name__ == "__main__":
 
     logger.info(f"Number of job IDs to process: {len(oldest_jobs_ids)}")
 
+    # Define UDF to decode/unescape JSON strings
+    def unescape_json(json_str):
+        """
+        Unescape JSON string if it's escaped.
+        Handles cases where JSON is stored with literal \\n, \\", \\\\ sequences.
+        """
+        if not json_str:
+            return None
+        try:
+            # Check if string contains literal escape sequences (backslash followed by n, t, r, ", etc.)
+            if '\\n' in json_str or '\\"' in json_str or '\\t' in json_str or '\\\\' in json_str:
+                # Decode escape sequences using unicode-escape or string-escape codec
+                # Use encode().decode() to properly handle escape sequences
+                unescaped = json_str.encode('utf-8').decode('unicode-escape')
+                return unescaped
+            # If already valid JSON, return as-is
+            return json_str
+        except Exception as e:
+            # If unescaping fails, return original
+            logger.debug(f"Failed to unescape JSON: {e}")
+            return json_str
+    
+    unescape_json_udf = udf(unescape_json, StringType())
+    
     # Cache JSON schema for mon_jdls parsing with larger sample size
     logger.info("Inferring JSON schema for mon_jdls")
     sample_json = spark.read.jdbc(
@@ -68,12 +93,42 @@ if __name__ == "__main__":
         logger.error("No valid JSON samples found in mon_jdls table for schema inference")
         raise ValueError("Cannot infer schema: no valid JSON samples in mon_jdls")
     
-    json_schema = spark.read.json(non_null_samples.rdd.map(lambda row: row.full_jdl)).schema
+    # Unescape JSON strings before schema inference
+    unescaped_samples = non_null_samples.withColumn("unescaped_jdl", unescape_json_udf(col("full_jdl")))
+    
+    # Try to infer schema from unescaped JSON
+    json_schema = spark.read.option("mode", "PERMISSIVE").json(unescaped_samples.rdd.map(lambda row: row.unescaped_jdl)).schema
     logger.info(f"Inferred JSON schema fields: {[field.name for field in json_schema.fields]}")
+    
+    # Check if schema inference failed (only _corrupt_record field)
+    if len(json_schema.fields) == 1 and json_schema.fields[0].name == "_corrupt_record":
+        logger.warning("Schema inference resulted in _corrupt_record only - JSON may be double-escaped")
+        logger.warning("Trying direct JSON parsing without unescaping...")
+        # Try without unescaping
+        json_schema = spark.read.option("mode", "PERMISSIVE").json(non_null_samples.rdd.map(lambda row: row.full_jdl)).schema
+        logger.info(f"Direct parsing schema fields: {[field.name for field in json_schema.fields]}")
+        use_unescape = False
+    else:
+        use_unescape = True
+        logger.info(f"Using unescaped JSON parsing")
 
-    # Check if LPMPassName exists in the inferred schema
-    lpm_passname_exists = "LPMPassName" in [field.name for field in json_schema.fields]
-    logger.info(f"LPMPassName field exists in schema: {lpm_passname_exists}")
+    # Check if LPMPassName or LPMPASSNAME exists in the inferred schema
+    schema_field_names = [field.name for field in json_schema.fields if field.name != "_corrupt_record"]
+    lpm_passname_exists = "LPMPassName" in schema_field_names
+    lpmpassname_uppercase_exists = "LPMPASSNAME" in schema_field_names
+    
+    logger.info(f"Schema has {len(schema_field_names)} fields (excluding _corrupt_record)")
+    logger.info(f"LPMPassName field exists: {lpm_passname_exists}, LPMPASSNAME exists: {lpmpassname_uppercase_exists}")
+    
+    # Determine which field name to use
+    lpm_field_name = None
+    if lpm_passname_exists:
+        lpm_field_name = "LPMPassName"
+    elif lpmpassname_uppercase_exists:
+        lpm_field_name = "LPMPASSNAME"
+    
+    if lpm_field_name:
+        logger.info(f"Will extract field: {lpm_field_name}")
 
     # Aggregate all processed job IDs for deletion after all batches are processed
     all_processed_job_ids = []
@@ -140,22 +195,45 @@ if __name__ == "__main__":
             valid_count = mon_jdls_valid.count()
             logger.info(f"Valid (non-NULL) mon_jdls records to parse: {valid_count}")
             
-            # Parse JSON with validation
-            mon_jdls_df = mon_jdls_valid.withColumn("jsonData", from_json("full_jdl", json_schema))
+            # Unescape JSON if needed, then parse
+            if use_unescape:
+                mon_jdls_unescaped = mon_jdls_valid.withColumn("full_jdl_unescaped", unescape_json_udf(col("full_jdl")))
+                mon_jdls_df = mon_jdls_unescaped.withColumn("jsonData", from_json(col("full_jdl_unescaped"), json_schema))
+            else:
+                mon_jdls_df = mon_jdls_valid.withColumn("jsonData", from_json("full_jdl", json_schema))
             
             # Check parsing success
+            successful_parse_count = mon_jdls_df.filter(col("jsonData").isNotNull()).count()
             failed_parse_count = mon_jdls_df.filter(col("jsonData").isNull()).count()
+            
+            logger.info(f"Successfully parsed {successful_parse_count} JSON records, {failed_parse_count} failed")
+            
             if failed_parse_count > 0:
                 logger.warning(f"Failed to parse {failed_parse_count} JSON records in batch {i // limit + 1}")
-                # Log sample of failed records (first 5)
-                failed_samples = mon_jdls_df.filter(col("jsonData").isNull()).select("job_id", "full_jdl").limit(5).collect()
-                for sample in failed_samples:
-                    logger.warning(f"Failed parse for job_id {sample.job_id}: {sample.full_jdl[:200] if sample.full_jdl else 'NULL'}...")
+                # Log sample of failed records (first 3)
+                if use_unescape:
+                    failed_samples = mon_jdls_df.filter(col("jsonData").isNull()).select("job_id", "full_jdl", "full_jdl_unescaped").limit(3).collect()
+                    for idx, sample in enumerate(failed_samples):
+                        logger.warning(f"Failed parse #{idx+1} for job_id {sample.job_id}")
+                        logger.warning(f"  Original (first 150 chars): {sample.full_jdl[:150] if sample.full_jdl else 'NULL'}...")
+                        logger.warning(f"  Unescaped (first 150 chars): {sample.full_jdl_unescaped[:150] if sample.full_jdl_unescaped else 'NULL'}...")
+                else:
+                    failed_samples = mon_jdls_df.filter(col("jsonData").isNull()).select("job_id", "full_jdl").limit(3).collect()
+                    for idx, sample in enumerate(failed_samples):
+                        logger.warning(f"Failed parse #{idx+1} for job_id {sample.job_id}")
+                        logger.warning(f"  JSON (first 200 chars): {sample.full_jdl[:200] if sample.full_jdl else 'NULL'}...")
+            
+            # Log a sample of successful parses for verification
+            if successful_parse_count > 0 and i == 0:  # Only log for first batch
+                logger.info("Sample of successfully parsed records:")
+                success_samples = mon_jdls_df.filter(col("jsonData").isNotNull()).select("job_id", "jsonData").limit(2).collect()
+                for sample in success_samples:
+                    logger.info(f"  job_id {sample.job_id}: jsonData fields present")
 
-            if lpm_passname_exists:
+            if lpm_field_name:
                 mon_jdls_df = mon_jdls_df.select(
                     col("job_id"),
-                    coalesce(col("jsonData.LPMPassName"), lit('')).alias("LPMPASSNAME")
+                    coalesce(col(f"jsonData.{lpm_field_name}"), lit('')).alias("LPMPASSNAME")
                 )
             else:
                 mon_jdls_df = mon_jdls_df.select(
