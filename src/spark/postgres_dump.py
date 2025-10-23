@@ -239,6 +239,13 @@ if __name__ == "__main__":
                     col("job_id"),
                     col("jsonData.*")  # This flattens all fields from the struct
                 )
+                
+                # Cast fields to prevent schema evolution errors
+                # Convert potentially problematic numeric fields to strings for consistency
+                if "HYXRunMergeID" in mon_jdls_df.columns:
+                    mon_jdls_df = mon_jdls_df.withColumn("HYXRunMergeID", col("HYXRunMergeID").cast("string"))
+                    logger.info("Cast HYXRunMergeID to string for schema compatibility")
+                
                 logger.info(f"Flattened {len(json_schema.fields)} JSON fields into separate columns")
             else:
                 # If no successful parses, just keep job_id with empty LPMPASSNAME
@@ -282,6 +289,8 @@ if __name__ == "__main__":
             logger.info("mon_jobs_data_v3 write completed")
             
             logger.info(f"Writing {final_jdl_count} mon_jdls_parsed records to Nessie")
+            # Note: mergeSchema only allows compatible changes (adding columns, widening types)
+            # Type narrowing (long -> string) requires table recreation
             mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").option("numPartitions", 10).append()
             logger.info("mon_jdls_parsed write completed")
             
