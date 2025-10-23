@@ -291,8 +291,26 @@ if __name__ == "__main__":
             logger.info(f"Writing {final_jdl_count} mon_jdls_parsed records to Nessie")
             # Note: mergeSchema only allows compatible changes (adding columns, widening types)
             # Type narrowing (long -> string) requires table recreation
-            mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").option("numPartitions", 10).append()
-            logger.info("mon_jdls_parsed write completed")
+            try:
+                # Try to append first (for existing table)
+                mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").option("numPartitions", 10).append()
+                logger.info("mon_jdls_parsed write completed (appended to existing table)")
+            except Exception as e:
+                error_msg = str(e)
+                logger.info(f"Caught exception during append: {e.__class__.__name__}")
+                logger.info(f"Checking if table doesn't exist...")
+                logger.info(f"'TABLE_OR_VIEW_NOT_FOUND' in error: {'TABLE_OR_VIEW_NOT_FOUND' in error_msg}")
+                logger.info(f"'cannot be found' in error: {'cannot be found' in error_msg}")
+                
+                if "TABLE_OR_VIEW_NOT_FOUND" in error_msg or "cannot be found" in error_msg:
+                    # Table doesn't exist, create it
+                    logger.info("✓ Table doesn't exist, creating new table mon_jdls_parsed")
+                    mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("numPartitions", 10).create()
+                    logger.info("mon_jdls_parsed write completed (created new table)")
+                else:
+                    # Some other error, re-raise it
+                    logger.error(f"Different error occurred, re-raising: {error_msg[:200]}")
+                    raise
             
             logger.info(f"Writing {trace_count} trace records to Nessie")
             trace_df.coalesce(10).writeTo("nessie.trace").append()
