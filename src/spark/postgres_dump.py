@@ -226,16 +226,22 @@ if __name__ == "__main__":
             # Log a sample of successful parses for verification
             if successful_parse_count > 0 and i == 0:  # Only log for first batch
                 logger.info("Sample of successfully parsed records:")
-                success_samples = mon_jdls_df.filter(col("jsonData").isNotNull()).select("job_id", "jsonData").limit(2).collect()
-                for sample in success_samples:
-                    logger.info(f"  job_id {sample.job_id}: jsonData fields present")
+                if lpm_field_name:
+                    success_samples = mon_jdls_df.filter(col("jsonData").isNotNull()).select("job_id", f"jsonData.{lpm_field_name}").limit(3).collect()
+                    for sample in success_samples:
+                        lpm_value = sample[1] if len(sample) > 1 else None
+                        logger.info(f"  job_id {sample.job_id}: {lpm_field_name} = '{lpm_value}'")
 
-            if lpm_field_name:
+            # Flatten ALL JSON fields into separate columns
+            if successful_parse_count > 0:
+                # Extract jsonData struct into separate columns
                 mon_jdls_df = mon_jdls_df.select(
                     col("job_id"),
-                    coalesce(col(f"jsonData.{lpm_field_name}"), lit('')).alias("LPMPASSNAME")
+                    col("jsonData.*")  # This flattens all fields from the struct
                 )
+                logger.info(f"Flattened {len(json_schema.fields)} JSON fields into separate columns")
             else:
+                # If no successful parses, just keep job_id with empty LPMPASSNAME
                 mon_jdls_df = mon_jdls_df.select(
                     col("job_id"),
                     lit('').alias("LPMPASSNAME")
