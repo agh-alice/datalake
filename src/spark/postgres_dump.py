@@ -290,7 +290,7 @@ if __name__ == "__main__":
             
             logger.info(f"Writing {final_jdl_count} mon_jdls_parsed records to Nessie")
             # Note: Different JDL records have different fields, so schema can vary between batches
-            # If schema doesn't match, we skip this batch and continue
+            # We only insert columns that already exist in the table
             try:
                 # Try to append first (for existing table)
                 mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "true").option("numPartitions", 10).append()
@@ -304,13 +304,51 @@ if __name__ == "__main__":
                     logger.info("✓ Table doesn't exist, creating new table mon_jdls_parsed")
                     mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("numPartitions", 10).create()
                     logger.info("mon_jdls_parsed write completed (created new table)")
-                elif "too many data columns" in error_msg or "Cannot write incompatible data" in error_msg:
-                    # Schema mismatch - skip this batch
-                    logger.warning(f"⚠️  Schema mismatch detected - skipping {final_jdl_count} mon_jdls_parsed records from this batch")
-                    logger.warning(f"Schema issue: {error_msg[:200]}")
-                    logger.info("Continuing with next batch...")
-                    # Don't raise - just skip this batch's JDL data
-                    # Other tables (job_info, mon_jobs_data_v3, trace) were already written
+                elif "too many data columns" in error_msg or "too many columns" in error_msg:
+                    # Schema mismatch - new batch has columns that table doesn't have
+                    # This happens because different JDLs have different fields
+                    logger.warning("⚠️  Schema mismatch detected - new data has more columns than existing table")
+                    logger.info("Selecting only columns that exist in the table and ignoring additional columns")
+                    
+                    try:
+                        # Get existing table schema
+                        existing_table = spark.read.table("nessie.mon_jdls_parsed")
+                        table_columns = existing_table.columns
+                        logger.info(f"Existing table has {len(table_columns)} columns")
+                        logger.info(f"New data has {len(mon_jdls_df.columns)} columns")
+                        
+                        # Find which columns from new data exist in the table
+                        matching_columns = [c for c in table_columns if c in mon_jdls_df.columns]
+                        missing_in_new_data = [c for c in table_columns if c not in mon_jdls_df.columns]
+                        extra_in_new_data = [c for c in mon_jdls_df.columns if c not in table_columns]
+                        
+                        logger.info(f"Matching columns: {len(matching_columns)}")
+                        logger.info(f"Columns in table but not in new data: {len(missing_in_new_data)}")
+                        if missing_in_new_data:
+                            logger.info(f"  Missing columns will be filled with NULL: {', '.join(missing_in_new_data[:10])}")
+                        logger.info(f"Columns in new data but not in table (will be ignored): {len(extra_in_new_data)}")
+                        if extra_in_new_data:
+                            logger.info(f"  Ignored columns: {', '.join(extra_in_new_data[:10])}")
+                        
+                        # Select matching columns and add NULL for missing columns
+                        selected_columns = []
+                        for column in table_columns:
+                            if column in mon_jdls_df.columns:
+                                selected_columns.append(col(column))
+                            else:
+                                # Column exists in table but not in new data, add as NULL
+                                selected_columns.append(lit(None).alias(column))
+                        
+                        # Create filtered dataframe with only table columns
+                        filtered_df = mon_jdls_df.select(selected_columns)
+                        logger.info(f"Created filtered dataframe with {len(filtered_df.columns)} columns matching table schema")
+                        
+                        # Try to append again with filtered data
+                        filtered_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("mergeSchema", "false").option("numPartitions", 10).append()
+                        logger.info("mon_jdls_parsed write completed (appended with filtered columns)")
+                    except Exception as filter_error:
+                        logger.error(f"Failed to filter and append: {filter_error}")
+                        raise
                 else:
                     # Some other error, re-raise it
                     logger.error(f"Different error occurred, re-raising: {error_msg[:200]}")
