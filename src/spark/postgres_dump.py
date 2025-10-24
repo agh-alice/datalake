@@ -304,11 +304,14 @@ if __name__ == "__main__":
                     logger.info("✓ Table doesn't exist, creating new table mon_jdls_parsed")
                     mon_jdls_df.coalesce(10).writeTo("nessie.mon_jdls_parsed").option("numPartitions", 10).create()
                     logger.info("mon_jdls_parsed write completed (created new table)")
-                elif "too many data columns" in error_msg or "too many columns" in error_msg:
-                    # Schema mismatch - new batch has columns that table doesn't have
-                    # This happens because different JDLs have different fields
-                    logger.warning("⚠️  Schema mismatch detected - new data has more columns than existing table")
-                    logger.info("Selecting only columns that exist in the table and ignoring additional columns")
+                elif "too many data columns" in error_msg or "too many columns" in error_msg or "Cannot write incompatible data" in error_msg:
+                    # Schema mismatch - new batch has columns that table doesn't have or type incompatibility
+                    # This happens because different JDLs have different fields and types
+                    if "Cannot write incompatible data" in error_msg:
+                        logger.warning("⚠️  Type incompatibility detected between new data and existing table")
+                    else:
+                        logger.warning("⚠️  Schema mismatch detected - new data has more columns than existing table")
+                    logger.info("Selecting only columns that exist in the table and converting types to match")
                     
                     try:
                         # Get existing table schema
@@ -330,14 +333,57 @@ if __name__ == "__main__":
                         if extra_in_new_data:
                             logger.info(f"  Ignored columns: {', '.join(extra_in_new_data[:10])}")
                         
-                        # Select matching columns and add NULL for missing columns
+                        # Get table schema to check data types
+                        table_schema = {field.name: field.dataType for field in existing_table.schema.fields}
+                        
+                        # Select matching columns, add NULL for missing columns, and cast types to match table
                         selected_columns = []
+                        type_mismatches = []
+                        from pyspark.sql.functions import to_json, array as spark_array, when, size
+                        
                         for column in table_columns:
                             if column in mon_jdls_df.columns:
-                                selected_columns.append(col(column))
+                                # Get the data types
+                                table_type = table_schema[column]
+                                new_data_type = mon_jdls_df.schema[column].dataType
+                                
+                                # Check if types match
+                                if str(table_type) != str(new_data_type):
+                                    type_mismatches.append(f"{column}: {new_data_type} -> {table_type}")
+                                    
+                                    # Handle type conversion to match table schema
+                                    table_type_str = str(table_type).lower()
+                                    new_type_str = str(new_data_type).lower()
+                                    
+                                    if "array" in table_type_str and "array" not in new_type_str:
+                                        # Table expects array but new data is not array (likely string)
+                                        # Convert single value to single-element array, or empty array if null
+                                        selected_columns.append(
+                                            when(col(column).isNull(), lit(None))
+                                            .otherwise(spark_array(col(column)))
+                                            .alias(column)
+                                        )
+                                    elif "array" not in table_type_str and "array" in new_type_str:
+                                        # Table expects non-array but new data is array
+                                        # Convert array to JSON string representation
+                                        selected_columns.append(to_json(col(column)).alias(column))
+                                    elif "struct" in new_type_str or "map" in new_type_str:
+                                        # Complex types - convert to JSON string
+                                        selected_columns.append(to_json(col(column)).alias(column))
+                                    else:
+                                        # Try direct cast for simple types (string, int, long, etc.)
+                                        selected_columns.append(col(column).cast(str(table_type)).alias(column))
+                                else:
+                                    selected_columns.append(col(column))
                             else:
-                                # Column exists in table but not in new data, add as NULL
-                                selected_columns.append(lit(None).alias(column))
+                                # Column exists in table but not in new data, add as NULL with proper type
+                                selected_columns.append(lit(None).cast(table_schema[column]).alias(column))
+                        
+                        if type_mismatches:
+                            logger.warning(f"Type mismatches detected for {len(type_mismatches)} columns:")
+                            for mismatch in type_mismatches[:10]:  # Show first 10
+                                logger.warning(f"  {mismatch}")
+                            logger.info("Converting mismatched types to match table schema")
                         
                         # Create filtered dataframe with only table columns
                         filtered_df = mon_jdls_df.select(selected_columns)
