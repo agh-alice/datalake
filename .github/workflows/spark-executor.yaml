@@ -1,5 +1,6 @@
 name: build-spark-executor
 on:
+  workflow_dispatch:
   push:
     branches: [master]
     paths: ['images/spark-executor/**', 'src/spark/**', '.github/workflows/spark-executor.yaml']
