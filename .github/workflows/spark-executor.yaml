@@ -1,0 +1,24 @@
+name: build-spark-executor
+on:
+  push:
+    branches: [master]
+    paths: ['images/spark-executor/**', 'src/spark/**', '.github/workflows/spark-executor.yaml']
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/spark-executor/Dockerfile
+          push: true
+          tags: ghcr.io/agh-alice/spark-executor:${{ github.sha }}
