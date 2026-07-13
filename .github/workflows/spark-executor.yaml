@@ -22,4 +22,7 @@ jobs:
           context: .
           file: images/spark-executor/Dockerfile
           push: true
-          tags: ghcr.io/agh-alice/spark-executor:${{ github.sha }}
+          # NOT ghcr.io/agh-alice/spark-executor: that package predates this CI
+          # (hand-pushed) and is not linked to this repo, so GITHUB_TOKEN gets
+          # write_package denied. A repo-scoped name is auto-linked with write.
+          tags: ghcr.io/agh-alice/datalake/spark-executor:${{ github.sha }}
