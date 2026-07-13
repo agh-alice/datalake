@@ -15,7 +15,7 @@ if __name__ == "__main__":
     spark = SparkSession.builder \
         .appName("postgres_dump") \
         .config("spark.executor.memory", "8g") \
-        .config("spark.executor.cores", "10") \
+        .config("spark.executor.cores", "3")  # 10 was sized for hardware that never existed; no gen-1 node has 10 free CPUs \
         .config("spark.driver.memory", "8g") \
         .config("spark.sql.shuffle.partitions", "200") \
         .getOrCreate()
