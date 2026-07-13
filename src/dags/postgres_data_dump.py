@@ -9,6 +9,7 @@ dag = DAG(
     schedule="@daily",
     start_date=datetime.datetime(2023, 1, 1),
     catchup=False,
+    max_active_runs=1,  # a long backlog-drain run must never overlap the next schedule tick
     concurrency = 1,
 )
 

@@ -39,7 +39,11 @@ if __name__ == "__main__":
     cursor = conn.cursor()
 
     logger.info("Fetching job IDs older than 7 days")
-    oldest_jobs_ids_query = "SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC"
+    # Cap per-run scope: the backlog is ~10M jobs (ingestion outage Feb-Jul 2026);
+    # an uncapped run would take multiple days with deletes only at the end.
+    # 500k oldest per nightly run drains the backlog in ~3 weeks while matching
+    # the steady-state new-job arrival rate (~250-500k/day).
+    oldest_jobs_ids_query = "SELECT job_id FROM job_info WHERE last_update < NOW() - INTERVAL '7 days' ORDER BY last_update ASC LIMIT 500000"
     oldest_jobs_ids = spark.read \
         .format("jdbc") \
         .option("url", url) \
